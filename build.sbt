@@ -1,6 +1,6 @@
 name := "zookeeper-client"
 
-version := "2.0.0_fs-a"
+version := "2.0.0_BT-1.0-SNAPSHOT"
 
 organization := "com.twitter"
 
@@ -14,8 +14,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.6.4",
-  "org.slf4j" % "slf4j-log4j12" % "1.6.4",
-  "log4j" % "log4j" % "1.2.16",
+  "org.slf4j" % "log4j-over-slf4j" % "1.6.4",
   "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test"
 )
 
