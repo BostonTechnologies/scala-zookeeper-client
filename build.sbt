@@ -22,7 +22,8 @@ libraryDependencies +=
   "org.apache.zookeeper" % "zookeeper" % "3.3.4" excludeAll(
     ExclusionRule(name = "jms"),
     ExclusionRule(name = "jmxtools"),
-    ExclusionRule(name = "jmxri")
+    ExclusionRule(name = "jmxri"),
+    ExclusionRule(name = "log4j")
   )
 
 licenses += ("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.txt</url>"))
