@@ -29,7 +29,7 @@ class ZooKeeperClientSpec extends Specification {
 
     doFirst {
       Logger.info("Attempting to connect to ZooKeeper server %s...".format(serverAddress))
-      zkClient = new ZooKeeperClient(serverAddress)
+      zkClient = new ZooKeeperClient(ZooKeeperClientConfiguration(serverAddress))
     }
 
     doLast {
@@ -147,7 +147,8 @@ class ZooKeeperClientSpec extends Specification {
           sessionExpiredLatch.countDown()
         }
       }
-      val sessionWatchingClient = new ZooKeeperClient("localhost", 1500, sessionWatcher = Some(sessionWatcher))
+      val sessionWatchingClient = new ZooKeeperClient(ZooKeeperClientConfiguration("localhost", 1500,
+        sessionWatcher = Some(sessionWatcher)))
 
       val testNodePath = "/helpme!"
 

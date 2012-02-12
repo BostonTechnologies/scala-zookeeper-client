@@ -11,9 +11,7 @@ import org.apache.zookeeper.Watcher.Event.KeeperState
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeout: Int = 3000,
-                      reconnectOnExpiration: Boolean = false, basePath: String = "",
-                      sessionWatcher: Option[(ZooKeeperClient, KeeperState) => Unit] = None) {
+class ZooKeeperClient(configuration: ZooKeeperClientConfiguration) {
 
   private val log = LoggerFactory.getLogger(this.getClass)
   @volatile private var zk : ZooKeeper = null
@@ -31,19 +29,19 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeou
       zk.close()
       zk = null
     }
-    zk = new ZooKeeper(servers, sessionTimeout,
+    zk = new ZooKeeper(configuration.servers, configuration.sessionTimeout,
                        new Watcher { def process(event : WatchedEvent) {
                          sessionEvent(assignLatch, connectionLatch, event)
                        }})
     assignLatch.countDown()
-    log.info("Attempting to connect to zookeeper servers {}", servers)
-    connectionLatch.await(connectTimeout, TimeUnit.MILLISECONDS)
+    log.info("Attempting to connect to zookeeper servers {}", configuration.servers)
+    connectionLatch.await(configuration.connectTimeout, TimeUnit.MILLISECONDS)
     try {
       isAlive
     } catch {
       case e => {
-        throw new RuntimeException("Could not connect to zookeeper ensemble: " + servers 
-          + ". Connection timed out after " + connectTimeout + " milliseconds!", e)
+        throw new RuntimeException("Could not connect to zookeeper ensemble: " + configuration.servers
+          + ". Connection timed out after " + configuration.connectTimeout + " milliseconds!", e)
       }
     }
   }
@@ -54,7 +52,7 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeou
     event.getState match {
       case KeeperState.SyncConnected => {
         try {
-          sessionWatcher.map(fn => fn(this, KeeperState.SyncConnected))
+          configuration.sessionWatcher.map(fn => fn(this, KeeperState.SyncConnected))
         } catch {
           case e:Exception =>
             log.error("Exception during zookeeper session watcher callback", e)
@@ -64,13 +62,13 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeou
       case KeeperState.Expired => {
         // Session was expired, inform interested party of event
         try {
-          sessionWatcher.map(fn => fn(this, KeeperState.Expired))
+          configuration.sessionWatcher.map(fn => fn(this, KeeperState.Expired))
         } catch {
           case e: Exception =>
             log.error("Exception during zookeeper session watcher callback", e)
         }
         //Create new handle if reconnectOnExpiration is true
-        if(reconnectOnExpiration) {
+        if(configuration.reconnectOnExpiration) {
           connect()
         }
       }
@@ -89,7 +87,7 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeou
     paths.reverse
   }
 
-  private def makeNodePath(path : String) = "%s/%s".format(basePath, path).replaceAll("//", "/")
+  private def makeNodePath(path : String) = "%s/%s".format(configuration.basePath, path).replaceAll("//", "/")
 
   def exists(path: String): Stat = {
     zk.exists(makeNodePath(path), false)
