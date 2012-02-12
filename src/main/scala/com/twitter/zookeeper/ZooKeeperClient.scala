@@ -4,13 +4,12 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.immutable.Set
 import org.apache.zookeeper.{CreateMode, KeeperException, Watcher, WatchedEvent, ZooKeeper}
-import org.apache.zookeeper.data.{ACL, Stat, Id}
+import org.apache.zookeeper.data.Stat
 import org.apache.zookeeper.ZooDefs.Ids
 import org.apache.zookeeper.Watcher.Event.EventType
 import org.apache.zookeeper.Watcher.Event.KeeperState
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.LoggerFactory
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.atomic.AtomicBoolean
 
 class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
                       basePath : String, watcher: Option[ZooKeeperClient => Unit]) {
@@ -31,7 +30,7 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
   def this(servers: String, watcher: ZooKeeperClient => Unit) =
     this(servers, 3000, 3000, "", watcher)
 
-  def getHandle() : ZooKeeper = zk
+  def getHandle: ZooKeeper = zk
 
   /**
    * connect() attaches to the remote zookeeper and sets an instance variable.
@@ -102,7 +101,7 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
     zk.getChildren(makeNodePath(path), false)
   }
 
-  def close() = zk.close
+  def close() { zk.close() }
 
   def isAlive: Boolean = {
     // If you can get the root, then we're alive.
@@ -159,35 +158,35 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
   def watchNode(node : String, onDataChanged : (Option[Array[Byte]], Stat) => Unit) {
     log.debug("Watching node {}", node)
     val path = makeNodePath(node)
-    def updateData {
+    def updateData() {
       val stat = new Stat()
       try {
         onDataChanged(Some(zk.getData(path, dataGetter, stat)), stat)
       } catch {
         case e:KeeperException => {
           log.warn("Failed to read node {}: {}", path, e)
-          deletedData
+          deletedData()
         }
       }
     }
 
-    def deletedData {
+    def deletedData() {
       onDataChanged(None, new Stat())
       if (zk.exists(path, dataGetter) != null) {
         // Node was re-created by the time we called zk.exist
-        updateData
+        updateData()
       }
     }
     def dataGetter = new Watcher {
       def process(event : WatchedEvent) {
         if (event.getType == EventType.NodeDataChanged || event.getType == EventType.NodeCreated) {
-          updateData
+          updateData()
         } else if (event.getType == EventType.NodeDeleted) {
-          deletedData
+          deletedData()
         }
       }
     }
-    updateData
+    updateData()
   }
 
   /**

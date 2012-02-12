@@ -5,11 +5,11 @@ import java.net.{Socket, ConnectException}
 import org.apache.zookeeper.CreateMode
 import org.apache.zookeeper.CreateMode._
 import org.apache.zookeeper.KeeperException.NoNodeException
-import org.apache.zookeeper.data.{Id, Stat}
+import org.apache.zookeeper.data.Stat
 import org.specs._
 import scala.collection.mutable
 
-class ZookeeperClientSpec extends Specification {
+class ZooKeeperClientSpec extends Specification {
 
   val hostlist = "localhost:2181"
 
@@ -30,7 +30,7 @@ class ZookeeperClientSpec extends Specification {
     }
 
     doLast {
-      zkClient.close
+      zkClient.close()
     }
 
     "be able to be instantiated with a FakeWatcher" in {
@@ -55,8 +55,7 @@ class ZookeeperClientSpec extends Specification {
     }
 
     "create a node at a specified path" in {
-      val data: Array[Byte] = Array(0x63)
-      val id = new Id("world", "anyone")
+      val data = Array[Byte](0x63)
       val createMode = EPHEMERAL
 
       zkClient.create("/foo", data, createMode) mustEqual "/foo"
@@ -64,7 +63,7 @@ class ZookeeperClientSpec extends Specification {
     }
 
     "watch a node" in {
-      val data: Array[Byte] = Array(0x63)
+      val data = Array[Byte](0x63)
       val node = "/datanode"
       val createMode = EPHEMERAL
       var watchCount = 0
@@ -108,7 +107,7 @@ class ZookeeperClientSpec extends Specification {
       def mkNode(node : String) {
         zkClient.create("/root/" + node, node.getBytes, CreateMode.EPHEMERAL)
       }
-      var children : mutable.Map[String,String] = mutable.Map()
+      val children : mutable.Map[String,String] = mutable.Map()
       var watchCount = 0
       def notifier(child : String) {
         watchCount += 1
