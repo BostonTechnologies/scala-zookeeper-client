@@ -11,21 +11,15 @@ import org.apache.zookeeper.Watcher.Event.KeeperState
 import org.slf4j.LoggerFactory
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
-                      basePath : String, watcher: Option[ZooKeeperClient => Unit]) {
+class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeout: Int = 3000,
+                      basePath : String = "", watcher: Option[ZooKeeperClient => Unit] = None) {
   private val log = LoggerFactory.getLogger(this.getClass)
   @volatile private var zk : ZooKeeper = null
   connect()
 
-  def this(servers: String, sessionTimeout: Int, connectTimeout: Int, basePath : String) =
-    this(servers, sessionTimeout, connectTimeout, basePath, None)
-
   def this(servers: String, sessionTimeout: Int, connectTimeout: Int, 
            basePath : String, watcher: ZooKeeperClient => Unit) =
     this(servers, sessionTimeout, connectTimeout, basePath, Some(watcher))
-
-  def this(servers: String) =
-    this(servers, 3000, 3000, "", None)
 
   def this(servers: String, watcher: ZooKeeperClient => Unit) =
     this(servers, 3000, 3000, "", watcher)
