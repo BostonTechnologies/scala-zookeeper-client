@@ -17,7 +17,7 @@ We provide several commonly used operations and utilities on top of Zookeeper's 
 
 ### Boston Technologies Additions
 
-The watcher passed in at construction time is now known as a 'session watcher'; it will be notified of the 'SyncConnected' and 'Expired' events.  This allows you to explicitly take steps in your application in a single place to deal with session expiration. We've also added:
+The watcher passed in at construction time is now known as a 'session watcher' as it will be notified of the 'SyncConnected' and 'Expired' events.  This allows you to explicitly take steps in your application from a central location to deal with session expiration. We've also added:
 
 * Optionally turn on/off auto reconnect logic since Apache recommends treating 'Session Expired' as a catastrophic event
 * Facade over the configuration parameters to make client cleaner
