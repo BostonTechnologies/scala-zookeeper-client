@@ -15,15 +15,11 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.6.4",
   "org.slf4j" % "log4j-over-slf4j" % "1.6.4",
-  "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test"
+  "org.scala-tools.testing" % "specs_2.9.1" % "1.6.9" % "test",
+  "junit" % "junit" % "4.8.2" % "test"
 )
 
 libraryDependencies += 
-  "org.apache.zookeeper" % "zookeeper" % "3.3.4" excludeAll(
-    ExclusionRule(name = "jms"),
-    ExclusionRule(name = "jmxtools"),
-    ExclusionRule(name = "jmxri"),
-    ExclusionRule(name = "log4j")
-  )
+  "org.apache.zookeeper" % "zookeeper" % "3.3.4" exclude("log4j", "log4j") exclude("javax.jms", "jms") exclude("com.sun.jdmk", "jmxtools") exclude("com.sun.jmx", "jmxri") exclude("junit", "junit")
 
 licenses += ("Apache 2", url("http://www.apache.org/licenses/LICENSE-2.0.txt</url>"))
