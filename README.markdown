@@ -1,4 +1,4 @@
-# scala-zookeeper-client
+# scala-zookeeper-client - Boston Technologies Fork
 
 ## About
 
@@ -6,13 +6,22 @@ A Scala client for [Apache ZooKeeper](http://hadoop.apache.org/zookeeper/), "a c
 
 ZooKeeper provides a Java client library that's perfectly usable from Scala. This just wraps some idioms and niceties around that library to make it as Scala-friendly as possible. It also ships with tests, so you can have some confidence that you'll be able to interact with ZooKeeper from Scala in a predictable and reliable way.
 
-The scala-zookeeper-client will automatically handle session expired events by creating a new connection to the Zookeeper servers. We also provide several commonly used operations and utilities on top of Zookeeper's minimal API:
+We provide several commonly used operations and utilities on top of Zookeeper's minimal API:
 
+* Reconnect to ZooKeeper server automatically after session expiration
 * Create a path of nodes, similar to 'mkdir -p'
 * Recursively delete a tree of nodes
 * Watch a node forever
 * Monitor a node's child set
 * For a given node, maintain a map from the node's children to the each child's data
+
+### Boston Technologies Additions
+
+The watcher passed in at construction time is now known as a 'session watcher'; it will be notified of the 'SyncConnected' and 'Expired' events.  This allows you to explicitly take steps in your application in a single place to deal with session expiration. We've also added:
+
+* Optionally turn on/off auto reconnect logic since Apache recommends treating 'Session Expired' as a catastrophic event
+* Facade over the configuration parameters to make client cleaner
+
 
 ## Usage
 
