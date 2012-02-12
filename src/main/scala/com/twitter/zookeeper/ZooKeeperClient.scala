@@ -48,7 +48,7 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int, connectTimeout: Int,
                        }})
     assignLatch.countDown()
     log.info("Attempting to connect to zookeeper servers {}", servers)
-    connectionLatch.await(sessionTimeout, TimeUnit.MILLISECONDS)
+    connectionLatch.await(connectTimeout, TimeUnit.MILLISECONDS)
     try {
       isAlive
     } catch {
