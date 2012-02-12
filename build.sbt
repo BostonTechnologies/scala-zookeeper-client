@@ -1,6 +1,6 @@
 name := "zookeeper-client"
 
-version := "2.0.0_BT-1.1"
+version := "2.0.0_BT-1.2-SNAPSHOT"
 
 organization := "com.twitter"
 
