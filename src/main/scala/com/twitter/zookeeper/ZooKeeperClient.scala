@@ -12,17 +12,12 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeout: Int = 3000,
-                      basePath : String = "", watcher: Option[ZooKeeperClient => Unit] = None) {
+                      reconnectOnExpiration: Boolean = false, basePath: String = "",
+                      sessionWatcher: Option[(ZooKeeperClient, KeeperState) => Unit] = None) {
+
   private val log = LoggerFactory.getLogger(this.getClass)
   @volatile private var zk : ZooKeeper = null
   connect()
-
-  def this(servers: String, sessionTimeout: Int, connectTimeout: Int, 
-           basePath : String, watcher: ZooKeeperClient => Unit) =
-    this(servers, sessionTimeout, connectTimeout, basePath, Some(watcher))
-
-  def this(servers: String, watcher: ZooKeeperClient => Unit) =
-    this(servers, 3000, 3000, "", watcher)
 
   def getHandle: ZooKeeper = zk
 
@@ -59,16 +54,25 @@ class ZooKeeperClient(servers: String, sessionTimeout: Int = 3000, connectTimeou
     event.getState match {
       case KeeperState.SyncConnected => {
         try {
-          watcher.map(fn => fn(this))
+          sessionWatcher.map(fn => fn(this, KeeperState.SyncConnected))
         } catch {
           case e:Exception =>
-            log.error("Exception during zookeeper connection established callback", e)
+            log.error("Exception during zookeeper session watcher callback", e)
         }
         connectionLatch.countDown()
       }
       case KeeperState.Expired => {
-        // Session was expired; create a new zookeeper connection
-        connect()
+        // Session was expired, inform interested party of event
+        try {
+          sessionWatcher.map(fn => fn(this, KeeperState.Expired))
+        } catch {
+          case e: Exception =>
+            log.error("Exception during zookeeper session watcher callback", e)
+        }
+        //Create new handle if reconnectOnExpiration is true
+        if(reconnectOnExpiration) {
+          connect()
+        }
       }
       case _ => // Disconnected -- zookeeper library will handle reconnects
     }

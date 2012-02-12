@@ -1,8 +1,10 @@
 package com.twitter.zookeeper
 
 import java.net.{Socket, ConnectException}
-//import org.scala_tools.javautils.Imports._
-import org.apache.zookeeper.CreateMode
+import org.apache.zookeeper.{WatchedEvent, Watcher, ZooKeeper, CreateMode}
+import org.apache.zookeeper.Watcher.Event.KeeperState
+import org.slf4j.LoggerFactory
+import java.util.concurrent.{TimeUnit, CountDownLatch}
 import org.apache.zookeeper.CreateMode._
 import org.apache.zookeeper.KeeperException.NoNodeException
 import org.apache.zookeeper.data.Stat
@@ -10,13 +12,14 @@ import org.specs._
 import scala.collection.mutable
 
 class ZooKeeperClientSpec extends Specification {
+  val Logger = LoggerFactory.getLogger(classOf[ZooKeeperClientSpec])
 
-  val hostlist = "localhost:2181"
+  val serverAddress = "localhost:2181"
 
   doBeforeSpec {
     // we need to be sure that a ZooKeeper server is running in order to test
-    println("Testing connection to ZooKeeper server at %s...".format(hostlist))
-    val socketPort = hostlist.split(":")
+    Logger.info("Testing connection to ZooKeeper server at %s...".format(serverAddress))
+    val socketPort = serverAddress.split(":")
     new Socket(socketPort(0), socketPort(1).toInt) mustNot throwA[ConnectException]
   }
 
@@ -25,8 +28,8 @@ class ZooKeeperClientSpec extends Specification {
     var zkClient : ZooKeeperClient = null
 
     doFirst {
-      println("Attempting to connect to ZooKeeper server %s...".format(hostlist))
-      zkClient = new ZooKeeperClient("localhost:2181")
+      Logger.info("Attempting to connect to ZooKeeper server %s...".format(serverAddress))
+      zkClient = new ZooKeeperClient(serverAddress)
     }
 
     doLast {
@@ -134,6 +137,41 @@ class ZooKeeperClientSpec extends Specification {
       children.keySet must containAll(List("b", "c"))
       watchCount mustEqual 4
       zkClient.deleteRecursive("/root")
+    }
+
+    "call default watcher in the event of a session expiration" in {
+      val sessionExpiredLatch = new CountDownLatch(1)
+      val sessionWatcher = (zk: ZooKeeperClient, state: KeeperState) => {
+        Logger.debug("Session watcher called with state: "+state)
+        if(state == KeeperState.Expired) {
+          sessionExpiredLatch.countDown()
+        }
+      }
+      val sessionWatchingClient = new ZooKeeperClient("localhost", 1500, sessionWatcher = Some(sessionWatcher))
+
+      val testNodePath = "/helpme!"
+
+      val node = sessionWatchingClient.create(testNodePath, Array.empty[Byte], CreateMode.EPHEMERAL)
+      node must notBeNull
+
+      //Make session expire by connecting with other client's session credentials,
+      // see Apache ZooKeeper docs for more info on this strategy
+      val connectLatch = new CountDownLatch(1)
+      val y = new ZooKeeper(serverAddress, 3000, new Watcher {
+        def process(event: WatchedEvent) {
+          if(event.getState == KeeperState.SyncConnected) {
+            connectLatch.countDown()
+          }
+          Logger.debug("Default Watcher event second zk client: " + event)
+        }
+      }, sessionWatchingClient.getHandle.getSessionId, sessionWatchingClient.getHandle.getSessionPasswd)
+      connectLatch.await(2000, TimeUnit.MILLISECONDS) must_== true
+
+      //close the second client
+      y.close()
+      
+      //Wait for session expired event to be triggered on original client
+      sessionExpiredLatch.await(4000l, TimeUnit.MILLISECONDS) must_== true
     }
 
   }
